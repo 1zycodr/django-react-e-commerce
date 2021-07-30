@@ -5,8 +5,11 @@ import { Link } from 'react-router-dom'
 import { register } from '../actions/userActions'
 import Message from '../components/Message'
 import CheckoutSteps from '../components/CheckoutSteps'
+import { createOrder } from '../actions/orderActions'
 
-function PlaceOrderScreen() {
+function PlaceOrderScreen({ history }) {
+    const orderCreate = useSelector(state => state.orderCreate)
+    const { order, error, success } = orderCreate
     const cart = useSelector(state => state.cart)
     const dispatch = useDispatch()
     
@@ -16,10 +19,27 @@ function PlaceOrderScreen() {
     cart.taxPrice = Number(cart.itemsPrice * 0.082).toFixed(2)
     cart.totalPrice = (Number(cart.itemsPrice) + 
         Number(cart.shippingPrice) + Number(cart.taxPrice)).toFixed(2)
+
+    if (!cart.paymentMethod) {
+        history.push('/payment')
+    }
     
-    const placeOrder = (e) => {
-        e.preventDefault()
-        console.log('place order')
+    useEffect(() => {
+        if (success) {
+            history.push(`/order/${order._id}`)
+        } 
+    }, [success, history])
+    
+    const placeOrder = () => {
+        dispatch(createOrder({
+            orderItems: cart.cartItems,
+            shippingAddress: cart.shippingAddress,
+            paymentMethod: cart.paymentMethod,
+            itemsPrice: cart.itemsPrice,
+            shippingPrice: cart.shippingPrice,
+            taxPrice: cart.taxPrice,
+            totalPrice: cart.totalPrice
+        }))
     }
 
     return (
@@ -107,6 +127,12 @@ function PlaceOrderScreen() {
                                     <Col>${cart.totalPrice}</Col>
                                 </Row>
                             </ListGroup.Item>
+                            
+                            { error && (
+                                <ListGroup.Item>
+                                    <Message variant='danger'>{error}</Message>
+                                </ListGroup.Item>
+                            )}
 
                             <ListGroup.Item>
                                 <Button
