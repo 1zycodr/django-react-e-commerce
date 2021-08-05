@@ -1,11 +1,10 @@
-from django.shortcuts import render
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
 from base.models import Product, Order, OrderItem, ShippingAddress
 from base.serializers import ProductSerializer, OrderItemSerializer, OrderSerializer
+from datetime import datetime
 
 
 @api_view(['POST'])
@@ -25,14 +24,17 @@ def add_order_items(request):
             shipping_price=data['shippingPrice'],
             total_price=data['totalPrice']
         )
+        order.save()
 
         shipping_address = ShippingAddress.objects.create(
             order=order,
             address=data['shippingAddress']['address'],
             city=data['shippingAddress']['city'],
             postal_code=data['shippingAddress']['city'],
-            country=data['shippingAddress']['country']
+            country=data['shippingAddress']['country'],
+            shipping_price=data['shippingPrice']
         )
+        shipping_address.save()
 
         for item in order_items:
             product = Product.objects.get(_id=item['product'])
@@ -49,3 +51,45 @@ def add_order_items(request):
 
         serializer = OrderSerializer(order, many=False)
         return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_orders(request):
+    user = request.user
+    orders = user.order_set.all()
+    serializer = OrderSerializer(orders, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_order_by_id(request, pk):
+    user = request.user
+    try:
+        order = Order.objects.get(_id=pk)
+    except Order.DoesNotExist:
+        return Response({'detail': 'Order does not exist'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if user.is_staff or order.user == user:
+        serializer = OrderSerializer(order, many=False)
+        return Response(serializer.data)
+    else:
+        return Response({'detail': 'Not authorized to view this order'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_order_to_paid(request, pk):
+    try:
+        order = Order.objects.get(_id=pk)
+    except Order.DoesNotExist:
+        return Response({'detail': 'Order does not exist'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    order.is_paid = True
+    order.paid_at = datetime.now()
+    order.save()
+
+    return Response({'detail': 'Order was paid'})
