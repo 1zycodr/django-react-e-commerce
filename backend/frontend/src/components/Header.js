@@ -26,7 +26,7 @@ function Header() {
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">
                         <SearchBox/>
-                        <Nav className="mr-auto">
+                        <Nav className="ml-auto" style={{marginLeft : 'auto'}}>
                             <LinkContainer to="/cart">
                                 <Nav.Link href="/cart"><i className="fas fa-shopping-cart"></i>Cart</Nav.Link>
                             </LinkContainer>
