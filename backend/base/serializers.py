@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Product, User, Order, OrderItem, ShippingAddress
+from .models import Product, User, Order, OrderItem, ShippingAddress, Review
 
 
 class JWTTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -49,11 +49,24 @@ class UserSerializerWithToken(UserSerializer):
         return str(token.access_token)
 
 
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+
+
 class ProductSerializer(serializers.ModelSerializer):
+    reviews = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Product
         fields = '__all__'
 
+    def get_reviews(self, obj):
+        reviews = obj.review_set.all()
+        reviews = reviews.order_by('-created_at')
+        serializer = ReviewSerializer(reviews, many=True)
+        return serializer.data
 
 class ShippingAddressSerializer(serializers.ModelSerializer):
     class Meta:

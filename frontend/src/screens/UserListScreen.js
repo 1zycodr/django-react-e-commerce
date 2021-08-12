@@ -47,7 +47,6 @@ function UserListScreen({ history }) {
                                     <th>NAME</th>
                                     <th>EMAIL</th>
                                     <th>ADMIN</th>
-                                    <th>ADMIN</th>
                                     <th></th>
                                 </tr>
                             </thead>
